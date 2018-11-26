@@ -1,0 +1,110 @@
+---
+title: "DATA 607 Assignment 12"
+author: "Jun Pan"
+date: "November 17, 2018"
+output: html_document
+
+
+```
+Week 12 assignment - NoSQL migration
+For this assignment, you should take information from a relational database and migrate it to a NoSQL database of your own choosing. 
+
+For the relational database, you might use the flights database, the tb database, the "data skills" database your team created for Project 3, or another database of your own choosing or creation.
+
+For the NoSQL database, you may use MongoDB (which we introduced in week 7), Neo4j, or another NoSQL database of your choosing.
+
+Your migration process needs to be reproducible.  R code is encouraged, but not required.  You should also briefly describe the advantages and disadvantages of storing the data in a relational database vs. your NoSQL database.
+```
+```{r}
+require(nycflights13)
+```
+
+```{r}
+flights.airlines <- airlines
+flights.airports <- airports
+flights.flights <- flights
+flights.planes <- planes
+flights.weather <- weather
+```
+```{r}
+getwd()
+```
+Because my computer run out of memories while I am running Neo4J for flight database.  So I reduce the size of fight.
+```{r}
+flights2<-flights[sample(nrow(flights),500),]
+```
+
+
+
+Write into csv file
+```{r}
+write.csv(flights.airlines, file = "airlines.csv")
+write.csv(flights.airports, file = "airports.csv")
+write.csv(flights2, file = "flights.csv")
+write.csv(flights.planes, file = "planes.csv")
+write.csv(flights.weather, file = "weather.csv")
+```
+
+```
+After above step, we have 5 csv files.
+
+Then, I installed neo4J on my computer.
+
+I created an "import folder" under neo4J on C drive of my computer
+
+Finally, I dragged the 5 csv files into "import folder" of neo4J.  At this point, Neo4J can automatically recognize my csv files.
+
+# Loading CSVs using Neo4J querry
+
+LOAD CSV WITH HEADERS FROM "file:///airlines.csv" AS airlines
+CREATE (a: Airlines {Carrier: airlines.carrier, Name: airlines.name})
+
+LOAD CSV WITH HEADERS FROM "file:///airports.csv" AS airports 
+CREATE (a: Airports {Label: airports.faa, Name: airports.name})
+
+LOAD CSV WITH HEADERS FROM "file:///flights.csv" AS flights
+CREATE (a: Flights {Number: flights.flight, Origin: flights.origin, Dest: flights.dest, Carrier: flights.carrier, Tailnum: flights.tailnum, year: flights.year, month: flights.month, day: flights.day, dep_time: flights.dep_time, arr_time: flights.arr_time})
+
+LOAD CSV WITH HEADERS FROM "file:///planes.csv" AS planes
+CREATE (a: Planes {Tailnum: planes.tailnum, Year: planes.year, Manufacturer: planes.manufacturer, Engines: planes.engines, Seats: planes.seats})
+
+LOAD CSV WITH HEADERS FROM "file:///weather.csv" AS weather
+CREATE (a: Weather {Loc: weather.origin, year: weather.year, month: weather.month, day: weather.day, temp: weather.temp})
+
+
+#Create Relationship
+Neo4J querry
+LOAD CSV WITH HEADERS FROM "file:///flights.csv" AS flights
+MATCH (a:Flights {Number: flights.flight, year:flights.year, month: flights.month, day: flights.day, dep_time: flights.dep_time, Carrier: flights.carrier})
+MATCH (b:Airports {Label: flights.origin})
+MERGE (a)-[r:Departs {dep_time: flights.dep_time}]->(b)
+
+LOAD CSV WITH HEADERS FROM "file:///flights.csv" AS flights
+MATCH (a:Flights {Number: flights.flight, year:flights.year, month: flights.month, day: flights.day, dep_time: flights.dep_time, Carrier: flights.carrier})
+MATCH (b:Airports {Label: flights.dest})
+MERGE (a)-[r:Arrives {arr_time: flights.arr_time}]->(b)
+
+MATCH (a: Airports) -[r]- (b: Flights) -[z]- (c: Airports) RETURN a,b,c
+```
+
+The image of nodes created by Neo4J will be showed in an additional powerpoint file.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
